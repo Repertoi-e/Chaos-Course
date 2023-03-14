@@ -69,8 +69,6 @@ vec3 mandelbrot() {
         float smoothed = log2(log2(zx * zx + zy * zy) / 2.0);
         int colorI = int(sqrt(float(iter + 10) - smoothed) * 256.0) % 2048;
         color = gradient(float(colorI) / 2048.0);
-
-        // color = map_color(iter, float(zx * zx), float(zy * zy));
     }
     return color;
 }

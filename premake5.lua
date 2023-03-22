@@ -1,22 +1,22 @@
 workspace "Chaos"
     architecture "x64"
     configurations { "Debug", "Release" }
-    startproject "Week 2"
+    startproject "Chaos"
 
     location(_OPTIONS["to"] or 'Build/' .. _ACTION)
 
 function common_settings()
     architecture "x64"
 
-    targetdir("Bin/%{cfg.buildcfg}/%{prj.name}")
-    objdir("Bin/%{cfg.buildcfg}/%{prj.name}/int")
+    targetdir("Build/Bin/%{cfg.buildcfg}/%{prj.name}")
+    objdir("Build/Bin-Int/%{cfg.buildcfg}/%{prj.name}")
 
     rtti "Off"
-	justmycode "Off"
-	editandcontinue "Off"
+    justmycode "Off"
+    editandcontinue "Off"
     exceptionhandling "Off" -- SEH still works
 
-	characterset "Unicode"	
+    characterset "Unicode"	
 
     filter "system:windows"
         staticruntime "On"
@@ -37,46 +37,40 @@ function common_settings()
     filter {}
 end
 
-project "glad"
-    common_settings()
+group "Dependencies"
+    include "Third Party/glad"
+    include "Third Party/glfw"
+    include "Third Party/imgui"
+group ""
 
-    kind "StaticLib"
-    language "C"
+group "Core"
+    project "Chaos"
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
 
-    files {
-        "Third Party/glad/src/glad.c"
-    }
-    
-    includedirs {
-        "Third Party/glad/include"
-    }
+        common_settings()
 
-project "Week 2"
-    common_settings()
+        files {
+            "src/**.h",
+            "src/**.cpp"
+        }
 
-    kind "ConsoleApp"
-    language "C++"
-    
-    cppdialect "C++17"
+        includedirs {
+            "src",
+            "Third Party/glad/include",
+            "Third Party/glfw/include",
+            "Third Party/stb/include",
+            "Third Party/imgui/"
+        }
 
-    files {
-        "Week 2/**.h",
-        "Week 2/**.cpp"
-    }
+        links {
+            "glad",
+            "GLFW",
+            "ImGui"
+        }
 
-    includedirs {
-        "Week 2",
-        "Third Party/glad/include",
-        "Third Party/glfw/include",
-        "Third Party/stb/include"
-    }
-
-    links {
-        "glad",
-        "Third Party/glfw/lib-vc2022/glfw3dll.lib"
-    }
-
-    postbuildcommands {
-        "{COPY} \"" .. _WORKING_DIR .. "/Week 2/data/\" \"%{cfg.targetdir}/data/\"",
-        "{COPY} \"" .. _WORKING_DIR .. "/Third Party/glfw/lib-vc2022/glfw3.dll\" \"%{cfg.targetdir}\""
-    }
+        postbuildcommands {
+            "{COPY} \"" .. _WORKING_DIR .. "/src/data/\" \"%{cfg.targetdir}/data/\""
+        }
+group ""

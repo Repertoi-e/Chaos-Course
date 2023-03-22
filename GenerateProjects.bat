@@ -2,4 +2,4 @@ REM @Platform
 
 @echo off
 
-call "Third Party\premake\premake5.exe" vs2022
+call "Third Party\bin\premake5.exe" vs2022

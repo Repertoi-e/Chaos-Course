@@ -8,10 +8,10 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Bin/Debug/Week 2/Week 2.exe",
+            "program": "${workspaceFolder}/Build/Bin/Debug/Chaos/Chaos.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/Bin/Debug/Week 2",
+            "cwd": "${workspaceFolder}/Build/Bin/Debug/Chaos",
             "environment": [],
             "console": "externalTerminal"
         }

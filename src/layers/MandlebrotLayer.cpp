@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 
+#include <imgui.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,15 +15,8 @@ extern int HEIGHT;
 GLuint g_FrameBuffer, g_ColorTexture;
 GLuint g_Program, g_VertexArray, g_VertexBuffer;
 
-bool mandlebrot_layer_init()
+void create_vb()
 {
-    shader_segment *segments = read_shader_file("data/week2.shader");
-    g_Program = create_shader(segments);
-    if (!g_Program)
-        return false;
-    defer_to_exit(glDeleteProgram(g_Program));
-
-    // Set up vertex buffer
     glGenVertexArrays(1, &g_VertexArray);
     glBindVertexArray(g_VertexArray);
     defer_to_exit(glDeleteVertexArrays(1, &g_VertexArray));
@@ -43,14 +38,17 @@ bool mandlebrot_layer_init()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, null);
+}
 
-    // Set up uniform variables
+void upload_screen_dim_to_shader()
+{
     glUseProgram(g_Program);
 
     GLint screenDimLocation = glGetUniformLocation(g_Program, "screen_dim");
     glUniform2f(screenDimLocation, (float)WIDTH, (float)HEIGHT);
+}
 
-    // Set up framebuffer
+bool create_framebuffer() {
     glGenFramebuffers(1, &g_FrameBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, g_FrameBuffer);
     defer_to_exit(glDeleteFramebuffers(1, &g_FrameBuffer));
@@ -68,15 +66,25 @@ bool mandlebrot_layer_init()
         fprintf(stderr, "Error: Failed to create framebuffer.\n");
         return false;
     }
-
     return true;
+}
+
+bool mandlebrot_layer_init()
+{
+    shader_segment *segments = read_shader_file("data/mandlebrot.shader");
+    g_Program = create_shader(segments);
+    if (!g_Program)
+        return false;
+    defer_to_exit(glDeleteProgram(g_Program));
+
+    create_vb();
+    upload_screen_dim_to_shader();
+    
+    return create_framebuffer();
 }
 
 void mandlebrot_layer_update()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, g_FrameBuffer);
     glViewport(0, 0, WIDTH, HEIGHT);
@@ -87,6 +95,8 @@ void mandlebrot_layer_update()
     glBindFramebuffer(GL_READ_FRAMEBUFFER, g_FrameBuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void save_frame_to_ppm(const char *filename, GLubyte *pixels, int width, int height)
@@ -120,4 +130,6 @@ void on_click()
 
 void mandlebrot_layer_ui()
 {
+    ImGui::Begin("Hello");
+    ImGui::End();
 }

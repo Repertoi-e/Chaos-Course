@@ -38,8 +38,8 @@ void init_imgui(GLFWwindow *window)
     (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;   // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;   // Enable Docking
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
     // io.ConfigViewportsNoAutoMerge = true;
     // io.ConfigViewportsNoTaskBarIcon = true;
 
@@ -63,10 +63,10 @@ void init_imgui(GLFWwindow *window)
     defer_to_exit(ImGui_ImplGlfw_Shutdown());
 
     // Load default font
-    ImFontConfig fontConfig;
-    fontConfig.FontDataOwnedByAtlas = false;
-    ImFont *robotoFont = io.Fonts->AddFontFromMemoryTTF((void *)g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f, &fontConfig);
-    io.FontDefault = robotoFont;
+    // ImFontConfig fontConfig;
+    // fontConfig.FontDataOwnedByAtlas = false;
+    // ImFont *robotoFont = io.Fonts->AddFontFromMemoryTTF((void *)g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f, &fontConfig);
+    // io.FontDefault = robotoFont;
 }
 
 int main()
@@ -96,17 +96,13 @@ int main()
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         glfwPollEvents();
 
-        for (int i = 0; i < (sizeof(g_LayersUpdate) / sizeof(layer_init_callback)); i++)
-        {
-            g_LayersUpdate[i]();
-        }
-
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         {
+            /*
             static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
             // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -132,7 +128,7 @@ int main()
             // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
             // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-            ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+            ImGui::Begin("DockSpace Demo", null, window_flags);
             ImGui::PopStyleVar();
 
             ImGui::PopStyleVar(2);
@@ -144,31 +140,41 @@ int main()
                 ImGuiID dockspace_id = ImGui::GetID("VulkanAppDockspace");
                 ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
             }
-
+*/
             for (int i = 0; i < (sizeof(g_LayersUI) / sizeof(layer_init_callback)); i++)
             {
                 g_LayersUI[i]();
             }
 
-            ImGui::End();
+            // ImGui::End();
         }
 
         // Rendering
         ImGui::Render();
-        ImDrawData *mainDrawData = ImGui::GetDrawData();
-        const bool mainIsMinimized = (mainDrawData->DisplaySize.x <= 0.0f || mainDrawData->DisplaySize.y <= 0.0f);
 
-        glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        // Update and Render additional Platform Windows
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        for (int i = 0; i < (sizeof(g_LayersUpdate) / sizeof(layer_init_callback)); i++)
         {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
+            g_LayersUpdate[i]();
         }
 
-        if (!mainIsMinimized)
-            glfwSwapBuffers(window);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Update and Render additional Platform Windows
+        /*if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }*/
+
+        glfwSwapBuffers(window);
     }
 
     return 0;

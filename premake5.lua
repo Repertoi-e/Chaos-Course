@@ -1,76 +1,24 @@
 workspace "Chaos"
     architecture "x64"
-    configurations { "Debug", "Release" }
-    startproject "Chaos"
+    configurations { "Debug", "DebugOptimized", "Release" }
+    location(_OPTIONS["to"] or "build/" .. _ACTION)
 
-    location(_OPTIONS["to"] or 'Build/' .. _ACTION)
-
-function common_settings()
-    architecture "x64"
-
-    targetdir("Build/Bin/%{cfg.buildcfg}/%{prj.name}")
-    objdir("Build/Bin-Int/%{cfg.buildcfg}/%{prj.name}")
-
-    rtti "Off"
-    justmycode "Off"
-    editandcontinue "Off"
-    exceptionhandling "Off" -- SEH still works
-
-    characterset "Unicode"	
-
-    filter "system:windows"
-        staticruntime "On"
-        systemversion "latest"
-    
-        defines {
-            "_CRT_SECURE_NO_WARNINGS"
-        }
-    
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "On"
-        
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "On"
-
+    filter { "action:gmake2" }
+        toolset "clang"
     filter {}
-end
 
-group "Dependencies"
-    include "Third Party/glad"
-    include "Third Party/glfw"
-    include "Third Party/imgui"
+    startproject "chaos"
+
+OUT_DIR = "build/bin/%{cfg.buildcfg}/%{prj.name}"
+INT_DIR = "build/bin-int/%{cfg.buildcfg}/%{prj.name}"
+
+group "dependencies"
+    include "third-party/light-std/premake5-lstd"
+    include "third-party/imgui"
+    include "third-party/glfw"
+    include "third-party/glad"
 group ""
 
-group "Core"
-    project "Chaos"
-        kind "ConsoleApp"
-        language "C++"
-        cppdialect "C++17"
-
-        common_settings()
-
-        files {
-            "src/**.h",
-            "src/**.cpp"
-        }
-
-        includedirs {
-            "src",
-            "Third Party/glad/include",
-            "Third Party/glfw/include",
-            "Third Party/stb/include",
-            "Third Party/imgui/"
-        }
-
-        links {
-            "glad",
-            "GLFW",
-            "ImGui"
-        }
-
-        postbuildcommands {
-            "{COPY} \"" .. _WORKING_DIR .. "/src/data/\" \"%{cfg.targetdir}/data/\""
-        }
+group "core"
+    include "premake5-chaos"
 group ""

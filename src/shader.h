@@ -1,32 +1,29 @@
 #pragma once
 
-#include "common.h"
+#include <lstd/array.h>
+#include <lstd/common.h>
+#include <lstd/string.h>
 
-[[nodiscard("Leak")]] char *read_entire_file(const char *filePath);
-
-enum shader_segment_type
-{
-    SHADER_UNKNOWN,
-    SHADER_VERTEX,
-    SHADER_FRAGMENT,
-    SHADER_COMPUTE,
-    SHADER_COUNT
+enum shader_segment_type {
+  SHADER_UNKNOWN,
+  SHADER_VERTEX,
+  SHADER_FRAGMENT,
+  SHADER_COMPUTE,
+  SHADER_COUNT
 };
 
-struct shader_segment
-{
-    char *Code = null;
-
-    shader_segment_type Type = SHADER_UNKNOWN;
+struct shader_segment {
+  string Code;
+  shader_segment_type Type = SHADER_UNKNOWN;
 };
 
-void free_shader_segment(shader_segment *s);
+void free(shader_segment ref s);
 
 // Returns array of shader segments. Looks in filePath and splits the contents,
-// looking for #vertex, #fragment, #compute special lines which separate the shaders.
-// If no such line is found, then type of the returned segment is SHADER_UNKNOWN.
-// Probably the caller knows what to do with it.
-[[nodiscard("Leak")]] shader_segment *read_shader_file(const char *filePath);
+// looking for #vertex, #fragment, #compute special lines which separate the
+// shaders. If no such line is found, then type of the returned segment is
+// SHADER_UNKNOWN. Probably the caller knows what to do with it.
+mark_as_leak array<shader_segment> read_shader_file(string filePath);
 
 // Create an OpenGL program object and return it
-[[nodiscard]] uint create_shader(shader_segment *segments);
+mark_as_leak u32 create_shader(array<shader_segment> segments);

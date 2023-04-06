@@ -20,6 +20,9 @@
 *.mod
 *.smod
 
+# Preprocessed files
+*.i
+
 # Compiled Static libraries
 *.lai
 *.la
@@ -31,4 +34,33 @@
 *.out
 *.app
 
-Build/
+bin/
+bin-int/
+.vscode/
+.sconsign.dblite
+.vs
+*.props
+*.sln
+*.vcxproj
+*.filters
+*.user
+cpp-utils-tests_project_suppressions.cfg
+*.diagsession
+CMakeSettings.json
+
+Makefile
+*.suppress
+**.pyc
+*/__pycache__/*
+
+os/bootloader/image.fat
+
+
+benchmark/obj/*
+game/obj/*
+os/bootloader/obj/*
+
+build/
+build
+
+limbo

@@ -14,7 +14,7 @@ void *create_window(const char *title, int width, int height) {
   if (!glfwInit()) return null;
   defer_to_exit(glfwTerminate());
 
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 

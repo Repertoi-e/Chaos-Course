@@ -13,14 +13,14 @@ array<shader_segment> read_shader_file(string filePath) {
   array<shader_segment> segments;
 
   auto file = os_read_entire_file(filePath);
-  file.visit(match{[&](string content) {
+  file.visit(match{[ref](string content) {
                      reserve(segments);
 
                      char *codeStart = content.Data;
                      char *p = content.Data;
 
                      shader_segment_type currentSegmentType = SHADER_UNKNOWN;
-                     auto addSegment = [&]() {
+                     auto addSegment = [ref]() {
                        shader_segment segment;
 
                        size_t n = p - codeStart;
@@ -65,11 +65,11 @@ GLuint create_shader(GLenum type, string source) {
   char *sourceTemp = to_c_string_temp(source);
 
   GLuint shader = glCreateShader(type);
-  glShaderSource(shader, 1, &sourceTemp, null);
+  glShaderSource(shader, 1, ref sourceTemp, null);
   glCompileShader(shader);
 
   GLint success;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  glGetShaderiv(shader, GL_COMPILE_STATUS, ref success);
   if (!success) {
     GLchar info[512];
     glGetShaderInfoLog(shader, 512, nullptr, info);
@@ -106,7 +106,7 @@ GLuint create_shader(GLenum type, string source) {
   glLinkProgram(program);
 
   GLint success;
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  glGetProgramiv(program, GL_LINK_STATUS, ref success);
   if (!success) {
     GLchar info[512];
     glGetProgramInfoLog(program, 512, nullptr, info);

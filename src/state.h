@@ -24,7 +24,7 @@ struct GlobalState {
   ImVec2 ViewportSize;
 };
 
-extern GlobalState g_State;
+inline GlobalState g_State;
 
 extern int WIDTH;
 extern int HEIGHT;

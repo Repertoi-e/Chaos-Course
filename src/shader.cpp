@@ -36,7 +36,8 @@ array<shader_segment> read_shader_file(string filePath) {
                              "", "#vertex", "#fragment", "#compute"};
                          for (int i = 1; i < SHADER_COUNT; i++) {
                            string header = headerMap[i];
-                           if (!header.Count) continue;
+                           if (!header.Count)
+                             continue;
 
                            if (strings_match(header, string(p, header.Count))) {
                              if (currentSegmentType != SHADER_UNKNOWN) {
@@ -82,14 +83,16 @@ GLuint create_shader(GLenum type, string source) {
 }
 
 [[nodiscard]] u32 create_shader(array<shader_segment> segments) {
-  if (!segments.Count) return 0;
+  if (!segments.Count)
+    return 0;
 
   array<GLuint> shaders;
   reserve(shaders);
   defer(free(shaders));
 
   For(segments) {
-    if (it.Type == SHADER_UNKNOWN) continue;
+    if (it.Type == SHADER_UNKNOWN)
+      continue;
     GLenum map[SHADER_COUNT] = {0, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER,
                                 GL_COMPUTE_SHADER};
     GLuint shader = create_shader(map[it.Type], it.Code);

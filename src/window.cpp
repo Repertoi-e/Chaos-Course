@@ -11,7 +11,8 @@ static void glfw_error_callback(int error, const char *description) {
 
 void *create_window(const char *title, int width, int height) {
   glfwSetErrorCallback(glfw_error_callback);
-  if (!glfwInit()) return null;
+  if (!glfwInit())
+    return null;
   defer_to_exit(glfwTerminate());
 
   glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -20,7 +21,7 @@ void *create_window(const char *title, int width, int height) {
 
   GLFWwindow *window = glfwCreateWindow(width, height, title, null, null);
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);  // Enable vsync
+  glfwSwapInterval(1); // Enable vsync
   gladLoadGL();
   return (void *)window;
 }

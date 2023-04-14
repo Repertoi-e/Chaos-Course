@@ -37,7 +37,8 @@ bool mandlebrot_layer_init() {
   defer(free(segments));
 
   g_Program = create_shader(segments);
-  if (!g_Program) return false;
+  if (!g_Program)
+    return false;
 
   create_vb();
   upload_screen_dim_to_shader();

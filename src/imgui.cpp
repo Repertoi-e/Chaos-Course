@@ -17,8 +17,8 @@ void init_imgui() {
 
   ImGuiIO ref io = ImGui::GetIO();
   io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableKeyboard;            // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
+      ImGuiConfigFlags_NavEnableKeyboard;           // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
 
   ImGui::StyleColorsDark();
 

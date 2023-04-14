@@ -12,8 +12,6 @@
 #include "state.h"
 #include "window.h"
 
-GlobalState g_State;
-
 int WIDTH = 1600;
 int HEIGHT = 900;
 
@@ -26,8 +24,10 @@ struct Initializer {
 Initializer g_Initializer = {};
 
 bool destroy_if_it_exists_and_recreate_framebuffer() {
-  if (g_State.FrameBuffer) glDeleteFramebuffers(1, ref g_State.FrameBuffer);
-  if (g_State.ColorTexture) glDeleteTextures(1, ref g_State.ColorTexture);
+  if (g_State.FrameBuffer)
+    glDeleteFramebuffers(1, ref g_State.FrameBuffer);
+  if (g_State.ColorTexture)
+    glDeleteTextures(1, ref g_State.ColorTexture);
 
   glGenFramebuffers(1, ref g_State.FrameBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, g_State.FrameBuffer);
@@ -81,7 +81,8 @@ void load_layer(const layer *l) {
 
 int run() {
   auto *window = (GLFWwindow *)create_window("Chaos", WIDTH, HEIGHT);
-  if (!window) return 1;
+  if (!window)
+    return 1;
 
   g_State.Window = window;
 
@@ -131,12 +132,12 @@ int run() {
           if (ImGui::MenuItem("Save Render", "Ctrl+S")) {
             save_frame_to_ppm("mandelbrot.ppm");
           }
-          if (ImGui::MenuItem("Load Empty layer...", "",
+          if (ImGui::MenuItem("Load empty view...", "",
                               g_State.Layer == &g_StubLayer)) {
             load_layer(&g_StubLayer);
           }
 
-          if (ImGui::MenuItem("Load Mandebrot layer...", "",
+          if (ImGui::MenuItem("Load Mandlebrot view...", "",
                               g_State.Layer == &MANDLEBROT_LAYER)) {
             load_layer(&MANDLEBROT_LAYER);
           }
@@ -180,7 +181,7 @@ int run() {
 
       g_State.Layer->UI();
 
-      ImGui::End();  // for draw_imgui_menu_and_dockspace, @Cleanup
+      ImGui::End(); // for draw_imgui_menu_and_dockspace, @Cleanup
     } else {
       // Not drawing editor UI
       int width, height;

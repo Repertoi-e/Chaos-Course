@@ -6,7 +6,6 @@
 #include "state.h"
 #include "window.h"
 
-GLuint g_FrameBuffer = 0, g_ColorTexture = 0;
 GLuint g_Program, g_VertexArray, g_VertexBuffer;
 
 void create_vb() {
@@ -33,35 +32,7 @@ void upload_screen_dim_to_shader() {
   glUniform2f(screenDimLocation, (float)get_width(), (float)get_height());
 }
 
-bool destroy_if_it_exists_and_recreate_framebuffer() {
-  if (g_FrameBuffer) glDeleteFramebuffers(1, ref g_FrameBuffer);
-  if (g_ColorTexture) glDeleteTextures(1, ref g_ColorTexture);
-
-  glGenFramebuffers(1, ref g_FrameBuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, g_FrameBuffer);
-  defer_to_exit(glDeleteFramebuffers(1, ref g_FrameBuffer));
-
-  glGenTextures(1, ref g_ColorTexture);
-  glBindTexture(GL_TEXTURE_2D, g_ColorTexture);
-  defer_to_exit(glDeleteTextures(1, ref g_ColorTexture));
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get_width(), get_height(), 0, GL_RGB,
-               GL_UNSIGNED_BYTE, null);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         g_ColorTexture, 0);
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    fprintf(stderr, "Error: Failed to create framebuffer.\n");
-    return false;
-  }
-  return true;
-}
-
-void mandlebrot_layer_viewport_resized() {
-  destroy_if_it_exists_and_recreate_framebuffer();
-  upload_screen_dim_to_shader();
-}
+void mandlebrot_layer_viewport_resized() { upload_screen_dim_to_shader(); }
 
 bool mandlebrot_layer_init() {
   array<shader_segment> segments = read_shader_file("data/mandlebrot.shader");
@@ -74,76 +45,14 @@ bool mandlebrot_layer_init() {
   create_vb();
   upload_screen_dim_to_shader();
 
-  return destroy_if_it_exists_and_recreate_framebuffer();
+  return true;
 }
 
-void mandlebrot_layer_update() {
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, g_FrameBuffer);
-  glViewport(0, 0, get_width(), get_height());
-  glClear(GL_COLOR_BUFFER_BIT);
+void mandlebrot_layer_render_to_viewport() {
+  glUseProgram(g_Program);
+  glBindVertexArray(g_VertexArray);
 
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, g_FrameBuffer);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  if (!g_State.DrawEditorUI) {
-    // Draw directly to window if we aren't drawing the editor
-    glBlitFramebuffer(0, 0, get_width(), get_height(), 0, 0, get_width(),
-                      get_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  auto ref io = ImGui::GetIO();
-  if (io.KeysData[ImGuiKey_S].DownDuration == 0.0f && io.KeyCtrl) {
-    void save_frame_to_ppm(string path);
-    save_frame_to_ppm("mandelbrot.ppm");
-  }
 }
 
-void save_frame_to_ppm(string path) {
-  string header = tprint("P6\n{} {}\n255\n", get_width(), get_height());
-
-  s64 imageSize = get_width() * get_height() * 3;
-  s64 size = header.Count + imageSize;
-
-  string contents;
-  contents.Data = malloc<char>({.Count = size});
-  contents.Count = size;
-  defer(free(contents));
-
-  memcpy(contents.Data, header.Data, header.Count);
-
-  glBindTexture(GL_TEXTURE_2D, g_ColorTexture);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE,
-                contents.Data + header.Count);
-
-  os_write_to_file(path, contents, file_write_mode::Overwrite_Entire);
-}
-
-void mandlebrot_layer_ui() {
-  // Draw to viewport window if we aren drawing the editor
-  if (g_State.DrawEditorUI) {
-    ImGui::Begin("Viewport");
-
-    ImVec2 viewportPos = ImGui::GetWindowPos();
-    ImVec2 viewportSize = ImGui::GetWindowSize();
-
-    auto *d = ImGui::GetWindowDrawList();
-    d->AddImage(
-        (ImTextureID)(intptr_t)g_FrameBuffer, viewportPos,
-        {viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y});
-
-    ImGui::End();
-  }
-
-  if (ImGui::BeginMainMenuBar()) {
-    if (ImGui::BeginMenu("Mandlebrot")) {
-      if (ImGui::MenuItem("Save Render", "Ctrl+S")) {
-        save_frame_to_ppm("mandelbrot.ppm");
-      }
-      ImGui::EndMenu();
-    }
-    ImGui::EndMainMenuBar();
-  }
-}
+void mandlebrot_layer_ui() {}

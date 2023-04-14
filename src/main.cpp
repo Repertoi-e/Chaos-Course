@@ -25,12 +25,50 @@ struct Initializer {
 
 Initializer g_Initializer = {};
 
-int run() {
-  free(g_State.Layers);
-  // Setup layers here. The order they appear are
-  // the order in which their callbacks are called.
-  g_State.Layers = {&MANDLEBROT_LAYER};
+bool destroy_if_it_exists_and_recreate_framebuffer() {
+  if (g_State.FrameBuffer) glDeleteFramebuffers(1, ref g_State.FrameBuffer);
+  if (g_State.ColorTexture) glDeleteTextures(1, ref g_State.ColorTexture);
 
+  glGenFramebuffers(1, ref g_State.FrameBuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, g_State.FrameBuffer);
+
+  glGenTextures(1, ref g_State.ColorTexture);
+  glBindTexture(GL_TEXTURE_2D, g_State.ColorTexture);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, get_width(), get_height(), 0, GL_RGB,
+               GL_UNSIGNED_BYTE, null);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         g_State.ColorTexture, 0);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    fprintf(stderr, "Error: Failed to create framebuffer.\n");
+    return false;
+  }
+  return true;
+}
+
+void save_frame_to_ppm(string path) {
+  string header = tprint("P6\n{} {}\n255\n", get_width(), get_height());
+
+  s64 imageSize = get_width() * get_height() * 3;
+  s64 size = header.Count + imageSize;
+
+  string contents;
+  contents.Data = malloc<char>({.Count = size});
+  contents.Count = size;
+  defer(free(contents));
+
+  memcpy(contents.Data, header.Data, header.Count);
+
+  glBindTexture(GL_TEXTURE_2D, g_State.ColorTexture);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                contents.Data + header.Count);
+
+  os_write_to_file(path, contents, file_write_mode::Overwrite_Entire);
+}
+
+int run() {
   auto *window = (GLFWwindow *)create_window("Chaos", WIDTH, HEIGHT);
   if (!window) return 1;
 
@@ -39,6 +77,12 @@ int run() {
   void init_imgui();
   init_imgui();
 
+  destroy_if_it_exists_and_recreate_framebuffer();
+
+  // Setup layers here. The order they appear are
+  // the order in which their callbacks are called.
+  free(g_State.Layers);
+  g_State.Layers = {&MANDLEBROT_LAYER};
   For(g_State.Layers) {
     if (!it->Init()) return 1;
   }
@@ -64,6 +108,11 @@ int run() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    if (io.KeysData[ImGuiKey_S].DownDuration == 0.0f && io.KeyCtrl) {
+      void save_frame_to_ppm(string path);
+      save_frame_to_ppm("mandelbrot.ppm");
+    }
+
     if (io.KeysData[ImGuiKey_E].DownDuration == 0.0f && io.KeyCtrl) {
       g_State.DrawEditorUI = !g_State.DrawEditorUI;
     }
@@ -72,8 +121,15 @@ int run() {
       void draw_imgui_menu_and_dockspace();
       draw_imgui_menu_and_dockspace();
 
-      // If drawing editor UI then the layers should be rendered to a texture
-      // into
+      if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("View")) {
+          if (ImGui::MenuItem("Save Render", "Ctrl+S")) {
+            save_frame_to_ppm("mandelbrot.ppm");
+          }
+          ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+      }
 
       ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
       ImGui::Begin("Viewport", null,
@@ -86,10 +142,26 @@ int run() {
           !float_equal(g_State.ViewportSize.y, viewportSize.y)) {
         g_State.ViewportSize = viewportSize;
 
+        destroy_if_it_exists_and_recreate_framebuffer();
         For(g_State.Layers) { it->ViewportResized(); }
       }
 
       ImGui::End();
+
+      // Draw to viewport window if we aren drawing the editor
+      if (g_State.DrawEditorUI) {
+        ImGui::Begin("Viewport");
+
+        ImVec2 viewportPos = ImGui::GetWindowPos();
+        ImVec2 viewportSize = ImGui::GetWindowSize();
+
+        auto *d = ImGui::GetWindowDrawList();
+        d->AddImage(
+            (ImTextureID)(intptr_t)g_State.FrameBuffer, viewportPos,
+            {viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y});
+
+        ImGui::End();
+      }
 
       For(g_State.Layers) { it->UI(); }
 
@@ -104,6 +176,7 @@ int run() {
           !float_equal(g_State.ViewportSize.y, fHeight)) {
         g_State.ViewportSize = {fWidth, fHeight};
 
+        destroy_if_it_exists_and_recreate_framebuffer();
         For(g_State.Layers) { it->ViewportResized(); }
       }
     }
@@ -118,7 +191,21 @@ int run() {
                  clearColor.z * clearColor.w, clearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    For(g_State.Layers) { it->Update(); }
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, g_State.FrameBuffer);
+    glViewport(0, 0, get_width(), get_height());
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    For(g_State.Layers) { it->RenderToViewport(); }
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, g_State.FrameBuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    if (!g_State.DrawEditorUI) {
+      // Draw directly to window if we aren't drawing the editor
+      glBlitFramebuffer(0, 0, get_width(), get_height(), 0, 0, get_width(),
+                        get_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);

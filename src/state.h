@@ -6,9 +6,17 @@ struct GLFWwindow;
 struct layer;
 
 struct GlobalState {
-  array<const layer *> Layers;
   GLFWwindow *Window = null;
+
+  array<const layer *> Layers;
+
+  // When we are drawing the editor
+  // we render stuff to a framebuffer
+  // and draw that texture in ImGUI.
   bool DrawEditorUI = true;
+  GLuint FrameBuffer = 0;
+  GLuint ColorTexture = 0;
+
   ImVec2 ViewportSize;
 };
 

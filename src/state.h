@@ -2,13 +2,17 @@
 
 #include <lstd/common.h>
 
+#include "layer.h"
+
 struct GLFWwindow;
-struct layer;
+
+inline const layer g_StubLayer = {[]() { return true; }, []() {}, []() {},
+                                  []() {}, []() {}};
 
 struct GlobalState {
   GLFWwindow *Window = null;
 
-  array<const layer *> Layers;
+  const layer *Layer = &g_StubLayer;
 
   // When we are drawing the editor
   // we render stuff to a framebuffer

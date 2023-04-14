@@ -11,11 +11,9 @@ GLuint g_Program, g_VertexArray, g_VertexBuffer;
 void create_vb() {
   glGenVertexArrays(1, ref g_VertexArray);
   glBindVertexArray(g_VertexArray);
-  defer_to_exit(glDeleteVertexArrays(1, ref g_VertexArray));
 
   glGenBuffers(1, ref g_VertexBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, g_VertexBuffer);
-  defer_to_exit(glDeleteBuffers(1, ref g_VertexBuffer));
 
   GLfloat vertices[] = {
       -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0,
@@ -40,12 +38,17 @@ bool mandlebrot_layer_init() {
 
   g_Program = create_shader(segments);
   if (!g_Program) return false;
-  defer_to_exit(glDeleteProgram(g_Program));
 
   create_vb();
   upload_screen_dim_to_shader();
 
   return true;
+}
+
+void mandlebrot_layer_uninit() {
+  glDeleteProgram(g_Program);
+  glDeleteBuffers(1, ref g_VertexBuffer);
+  glDeleteVertexArrays(1, ref g_VertexArray);
 }
 
 void mandlebrot_layer_render_to_viewport() {

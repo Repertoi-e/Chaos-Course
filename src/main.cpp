@@ -68,6 +68,17 @@ void save_frame_to_ppm(string path) {
   os_write_to_file(path, contents, file_write_mode::Overwrite_Entire);
 }
 
+void load_layer(const layer *l) {
+  g_State.Layer->Uninit();
+
+  if (l->Init()) {
+    g_State.Layer = l;
+  } else {
+    g_State.Layer = &g_StubLayer;
+  }
+  g_State.Layer->Init();
+}
+
 int run() {
   auto *window = (GLFWwindow *)create_window("Chaos", WIDTH, HEIGHT);
   if (!window) return 1;
@@ -79,13 +90,7 @@ int run() {
 
   destroy_if_it_exists_and_recreate_framebuffer();
 
-  // Setup layers here. The order they appear are
-  // the order in which their callbacks are called.
-  free(g_State.Layers);
-  g_State.Layers = {&MANDLEBROT_LAYER};
-  For(g_State.Layers) {
-    if (!it->Init()) return 1;
-  }
+  load_layer(&MANDLEBROT_LAYER);
 
   ImGuiIO ref io = ImGui::GetIO();
   ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -126,6 +131,16 @@ int run() {
           if (ImGui::MenuItem("Save Render", "Ctrl+S")) {
             save_frame_to_ppm("mandelbrot.ppm");
           }
+          if (ImGui::MenuItem("Load Empty layer...", "",
+                              g_State.Layer == &g_StubLayer)) {
+            load_layer(&g_StubLayer);
+          }
+
+          if (ImGui::MenuItem("Load Mandebrot layer...", "",
+                              g_State.Layer == &MANDLEBROT_LAYER)) {
+            load_layer(&MANDLEBROT_LAYER);
+          }
+
           ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -143,7 +158,7 @@ int run() {
         g_State.ViewportSize = viewportSize;
 
         destroy_if_it_exists_and_recreate_framebuffer();
-        For(g_State.Layers) { it->ViewportResized(); }
+        g_State.Layer->ViewportResized();
       }
 
       ImGui::End();
@@ -163,7 +178,7 @@ int run() {
         ImGui::End();
       }
 
-      For(g_State.Layers) { it->UI(); }
+      g_State.Layer->UI();
 
       ImGui::End();  // for draw_imgui_menu_and_dockspace, @Cleanup
     } else {
@@ -177,7 +192,7 @@ int run() {
         g_State.ViewportSize = {fWidth, fHeight};
 
         destroy_if_it_exists_and_recreate_framebuffer();
-        For(g_State.Layers) { it->ViewportResized(); }
+        g_State.Layer->ViewportResized();
       }
     }
 
@@ -196,7 +211,7 @@ int run() {
     glViewport(0, 0, get_width(), get_height());
     glClear(GL_COLOR_BUFFER_BIT);
 
-    For(g_State.Layers) { it->RenderToViewport(); }
+    g_State.Layer->RenderToViewport();
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, g_State.FrameBuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

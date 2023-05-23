@@ -1,7 +1,7 @@
-#include "shader.h"
+#include "gl.h"
 
-#include <glad/glad.h>
 #include <lstd/lstd.h>
+#include "shader.h"
 
 void free(shader_segment ref s) { free(s.Code); }
 
@@ -125,4 +125,40 @@ GLuint create_shader(GLenum type, string source) {
   }
 
   return program;
+}
+
+shader *get_new_shader_from_file(string filePath) {
+  array<shader_segment> segments = read_shader_file(filePath);
+  defer(free(segments));
+
+  GLuint program = create_shader(segments);
+  if (!program)
+    return null;
+
+  auto *result = new shader;
+  result->Program = program;
+  return result;
+}
+
+shader *g_Stub = null;
+
+shader get_shader_from_key(asset_key key) {
+  asset *asst = get_asset_from_key_maybe_cached(
+      key,
+      [](string filePath) -> load_result {
+        auto *result = get_new_shader_from_file(filePath);
+        if (result) {
+          return {result, false};
+        } else {
+          if (!g_Stub) {
+            g_Stub = get_new_shader_from_file("data/stub.shader");
+          }
+          return {g_Stub, true};
+        }
+      },
+      [](asset *asst) {
+        glDeleteProgram(((shader *)asst)->Program);
+        free(asst);
+      });
+  return *((shader *)asst);
 }

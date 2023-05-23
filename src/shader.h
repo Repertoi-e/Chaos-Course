@@ -4,6 +4,8 @@
 #include <lstd/common.h>
 #include <lstd/string.h>
 
+#include "asset.h"
+
 enum shader_segment_type {
   SHADER_UNKNOWN,
   SHADER_VERTEX,
@@ -27,3 +29,11 @@ mark_as_leak array<shader_segment> read_shader_file(string filePath);
 
 // Create an OpenGL program object and return it
 mark_as_leak u32 create_shader(array<shader_segment> segments);
+
+struct shader : public asset {
+  shader() { Type = Shader; }
+
+  u32 Program;
+};
+
+shader get_shader_from_key(asset_key key);

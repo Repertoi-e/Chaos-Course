@@ -1,9 +1,6 @@
-#include "window.h"
+#include "gl.h"
 
-// clang-format off
-#include <glad/glad.h>
-#include <glfw/glfw3.h>
-// clang-format on
+#include "window.h"
 
 static void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "GLFW Error %d: %s\n", error, description);
@@ -21,7 +18,8 @@ void *create_window(const char *title, int width, int height) {
 
   GLFWwindow *window = glfwCreateWindow(width, height, title, null, null);
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(1); // Enable vsync
   gladLoadGL();
+  glfwSwapInterval(1); // Enable vsync
+
   return (void *)window;
 }

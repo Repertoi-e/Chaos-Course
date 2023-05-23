@@ -1,19 +1,13 @@
-// Emedded font
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-// clang-format off
-#include <glad/glad.h>
-#include <glfw/glfw3.h>
-// clang-format on
-#include <imgui.h>
+#include "gl.h"
+
 #include <lstd/lstd.h>
 
 #include "layers/mandlebrot_layer.h"
 #include "state.h"
 #include "window.h"
 
-int WIDTH = 1600;
-int HEIGHT = 900;
+int SETTINGS_WIDTH = 1600;
+int SETTINGS_HEIGHT = 900;
 
 // @Cleanup, we need to run this for our lstd library currently,
 // but for some reason it doesn't run inside the library itself.
@@ -80,7 +74,7 @@ void load_layer(const layer *l) {
 }
 
 int run() {
-  auto *window = (GLFWwindow *)create_window("Chaos", WIDTH, HEIGHT);
+  auto *window = (GLFWwindow *)create_window("Chaos", SETTINGS_WIDTH, SETTINGS_HEIGHT);
   if (!window)
     return 1;
 
@@ -109,16 +103,17 @@ int run() {
     // flags.
     glfwPollEvents();
 
-    // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    // Ctrl+S, save rendered frame
     if (io.KeysData[ImGuiKey_S].DownDuration == 0.0f && io.KeyCtrl) {
       void save_frame_to_ppm(string path);
       save_frame_to_ppm("mandelbrot.ppm");
     }
 
+    // Ctrl+E, toggle editor
     if (io.KeysData[ImGuiKey_E].DownDuration == 0.0f && io.KeyCtrl) {
       g_State.DrawEditorUI = !g_State.DrawEditorUI;
     }
@@ -183,7 +178,8 @@ int run() {
 
       ImGui::End(); // for draw_imgui_menu_and_dockspace, @Cleanup
     } else {
-      // Not drawing editor UI
+      // Not drawing editor UI, just check for window size change
+
       int width, height;
       glfwGetWindowSize(g_State.Window, ref width, ref height);
       float fWidth = cast(float) width, fHeight = cast(float) height;
@@ -197,7 +193,8 @@ int run() {
       }
     }
 
-    // Rendering
+    // Rendering:
+
     ImGui::Render();
 
     int display_w, display_h;
@@ -232,15 +229,16 @@ int run() {
 }
 
 int main() {
-  constexpr s64 TEMP_SIZE = 1_MiB;
-  TemporaryAllocatorData.Block = os_allocate_block(TEMP_SIZE);
-  TemporaryAllocatorData.Size = TEMP_SIZE;
+  arena_allocator_data persistentAllocatorData;
+  persistentAllocatorData.Block =
+      os_allocate_block(PERSISTENT_MEMORY_BLOCK_SIZE);
+  persistentAllocatorData.Size = PERSISTENT_MEMORY_BLOCK_SIZE;
 
-  tlsf_allocator_data data;
+  PersistentAllocator = {arena_allocator, ref persistentAllocatorData};
 
-  constexpr s64 SIZE = 16_MiB;
-  tlsf_allocator_add_pool(ref data, os_allocate_block(SIZE), SIZE);
-
-  allocator alloc = {tlsf_allocator, ref data};
-  PUSH_ALLOC(alloc) { return run(); }
+  PUSH_ALLOC(PersistentAllocator) {
+    TemporaryAllocatorData.Block = malloc(TEMPORARY_MEMORY_BLOCK_SIZE);
+    TemporaryAllocatorData.Size = TEMPORARY_MEMORY_BLOCK_SIZE;
+    return run();
+  }
 }

@@ -6,9 +6,10 @@
 #include "state.h"
 #include "window.h"
 
-GLuint g_Program, g_VertexArray, g_VertexBuffer;
+asset_key g_ShaderKey = string("data/mandlebrot.shader");
+GLuint g_VertexArray, g_VertexBuffer;
 
-void create_vb() {
+bool mandlebrot_layer_init() {
   glGenVertexArrays(1, ref g_VertexArray);
   glBindVertexArray(g_VertexArray);
 
@@ -21,40 +22,23 @@ void create_vb() {
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, null);
-}
-
-void upload_screen_dim_to_shader() {
-  glUseProgram(g_Program);
-
-  GLint screenDimLocation = glGetUniformLocation(g_Program, "screen_dim");
-  glUniform2f(screenDimLocation, (float)get_width(), (float)get_height());
-}
-
-void mandlebrot_layer_viewport_resized() { upload_screen_dim_to_shader(); }
-
-bool mandlebrot_layer_init() {
-  array<shader_segment> segments = read_shader_file("data/mandlebrot.shader");
-  defer(free(segments));
-
-  g_Program = create_shader(segments);
-  if (!g_Program)
-    return false;
-
-  create_vb();
-  upload_screen_dim_to_shader();
 
   return true;
 }
 
 void mandlebrot_layer_uninit() {
-  glDeleteProgram(g_Program);
   glDeleteBuffers(1, ref g_VertexBuffer);
   glDeleteVertexArrays(1, ref g_VertexArray);
 }
 
 void mandlebrot_layer_render_to_viewport() {
-  glUseProgram(g_Program);
+  GLuint program = get_shader_from_key(g_ShaderKey).Program;
+
+  glUseProgram(program);
   glBindVertexArray(g_VertexArray);
+
+  GLint screenDimLocation = glGetUniformLocation(program, "screen_dim");
+  glUniform2f(screenDimLocation, (float)get_width(), (float)get_height());
 
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
